@@ -155,70 +155,173 @@
 //     searchBarField.setAttribute("name", configObj["name"]);
 // }
 
-(function () {
-    // import configuration and export configuration
-    function getConfig($block) {
-        var ret = {},
-            $grids = $("div.website", $block),
-            configOfAllGrids = [],
-            i;
+;(function () {
 
-        ret["title"] = $("div.block-name", $block).text().trim();
-        for (i = 0; i < $grids.length; i++) {
-            var siteObj = {};
+// backup and restore
+var $menuModal = $("#menu-context"),
+    $myInputFileDiv = $("#o3 .my-input-file"),
+    $textInput = $myInputFileDiv.find("input[type='text']"),
+    $clearBtn = $myInputFileDiv.find("button.btn-danger"),
+    $fileBtn = $("#o3 #file-btn");
 
-            siteObj["name"] = $("a span", $grids[i]).text();
-            siteObj["href"] = $("a", $grids[i]).attr("href");
-            configOfAllGrids.push(siteObj);
-        }
-        ret["websites"] = configOfAllGrids;
-        return ret;
+function createInputFileGhost() {
+    var $newIF = $("<input type='file' class='input-ghost' style='display: none;'>");
+
+    if ($menuModal.find(".input-ghost").length) {
+        return ;
     }
+    $newIF.attr("name", $myInputFileDiv.attr("name"));
+    $newIF.on("change", function (evt) {
+        // console.log($newIF.prop("files"));
+        // localJSONFileHandler($newIF.prop("files")[0]);
+        $textInput.val($newIF.val().split("\\").pop());
+    });
+    $textInput.css("cursor", "pointer");
+    $textInput.on("click", function (evt) {
+        $newIF.click();
+    });
+    $clearBtn.on("click", function (evt) {
+        // console.log($newIF.prop("files"));
+        $newIF.val("");
+        // console.log($newIF.val());
+        $textInput.val("");
+        // console.log($newIF.prop("files"));
+        // console.log($textInput.val());
+    });
+    return $newIF;
+}
 
-    function setConfig($block, configObj) {
-        var $grids = $("div.website", $block),
-            webs = configObj["websites"],
-            i;
+$menuModal.on("shown.bs.modal", function (evt) {
+    $(this).append(function (index, html) {
+        return createInputFileGhost();
+    });
+});
 
-        $("div.block-name", $block).text(configObj["title"]);
-        for (i = 0; i < webs.length; i++) {
-            $("a span", $grids[i]).text(webs[i]["name"]);
-            $("a", $grids[i]).attr("href", webs[i]["href"]);
-        }
+$menuModal.on("hidden.bs.modal", function (evt) {
+    $(".input-ghost", $menuModal).val("");
+    $textInput.val("");
+});
+
+$myInputFileDiv.on("mouseover", function (evt) {
+    $textInput.removeAttr('disabled');
+    $clearBtn.removeAttr('disabled');
+    $fileBtn.text("导入");
+    $fileBtn.attr("data-sign", "1");
+});
+
+$myInputFileDiv.on("mouseout", function (evt) {
+    if ($textInput.val()) {
+        return ;
     }
+    $(".input-ghost", $menuModal).val("");
+    $textInput.attr('disabled','disabled');
+    $clearBtn.attr('disabled','disabled');
+    $fileBtn.text("导出");
+    $fileBtn.attr("data-sign", "0");
+});
 
-    function configJSONFileDownload(content, filename) {
-        var a = "<a style='display: none;' download='" + filename +"'></a>",
-            blob = new Blob([content], {type : 'application/json'}),
-            $a = $(a);
-
-        $a.attr("href", URL.createObjectURL(blob));
-        $a.appendTo("body");
-        $a[0].click();
-        $a.remove();
-    }
-
-    var config = {},
-        configOfAllBlocks = [],
-        now = new Date(),
-        backup = "",
-        $blocks = $("div.building"),
+function getConfig($block) {
+    var ret = {},
+        $grids = $("div.website", $block),
+        configOfAllGrids = [],
         i;
 
-    for (i = 0; i < $blocks.length; i++) {
-        configOfAllBlocks.push(getConfig($blocks[i]));
-    }
-    config["data"] = now.toLocaleString();
-    config["config"] = configOfAllBlocks;
+    ret["title"] = $("div.block-name", $block).text().trim();
+    for (i = 0; i < $grids.length; i++) {
+        var siteObj = {};
 
-    var fileContent = JSON.stringify(config, null, 4),
+        siteObj["name"] = $("a span", $grids[i]).text();
+        siteObj["href"] = $("a", $grids[i]).attr("href");
+        configOfAllGrids.push(siteObj);
+    }
+    ret["websites"] = configOfAllGrids;
+    return ret;
+}
+
+function setConfig($block, configObj) {
+    var $grids = $("div.website", $block),
+        webs = configObj["websites"],
+        i;
+
+    $("div.block-name", $block).text(configObj["title"]);
+    for (i = 0; i < webs.length; i++) {
+        $("a span", $grids[i]).text(webs[i]["name"]);
+        $("a", $grids[i]).attr("href", webs[i]["href"]);
+    }
+}
+
+function configJSONFileDownload(content, filename) {
+    var a = "<a style='display: none;' download='" + filename +"'></a>",
+        blob = new Blob([content], {type : 'application/json'}),
+        $a = $(a);
+
+    $a.attr("href", URL.createObjectURL(blob));
+    $a.appendTo($menuModal);
+    $a[0].click();
+    $a.remove();
+}
+
+function localJSONFileHandler(file) {
+    var tempFR = new FileReader();
+
+    return new Promise(function (resolve, reject) {
+        tempFR.onload = function () {
+            resolve(this.result);
+        };
+        tempFR.onerror = function () {
+            tempFR.abort();
+            reject(new Error("Problem parsing input file!"));
+        };
+        tempFR.readAsText(file);
+    });
+}
+
+$fileBtn.on("click", function (evt) {
+    var sign = +$(this).attr("data-sign"),
+        $blocks = $("div.building"),
+        configJSON, configOfAllBlocks, now,
+        fileContent, filename,
+        localFile;
+
+    if (!$blocks.length) {
+        console.error("ERROR! Please use this script at http://qianshan.co!");
+        return ;
+    }
+    if (sign) {
+        // localFile = $(".input-ghost", $menuModal)[0].files[0];
+        localFile = $(".input-ghost", $menuModal).prop("files")[0];
+        // console.log(localFile);
+        localJSONFileHandler(localFile).then(function (json) {
+            json = JSON.parse(json);
+            if (!json["data"] || !json["config"]) {
+                console.error("ERROR! JSON file content is incorrect!");
+            }
+            json = json["config"];
+            $blocks.each(function (index, element) {
+                setConfig(element, json[index]);
+            });
+            console.log("the import operation succeeded.");
+        }, function (error) {
+            console.error("ERROR!", error);
+        });
+    } else {
+        configOfAllBlocks = [];
+        configJSON = {};
+        now = new Date();
+        $blocks.each(function (index, element) {
+            // console.log(element);
+            // console.log(getConfig(element));
+            configOfAllBlocks.push(getConfig(element));
+        });
+        configJSON["data"] = now.toLocaleString();
+        configJSON["configJSON"] = configOfAllBlocks;
+        fileContent = JSON.stringify(configJSON, null, 4);
         filename = "qianshan-config-" + now.getUTCFullYear() + "-"
                    + (now.getUTCMonth()+1) + "-"
                    + now.getUTCDate() + ".json";
-
-    var backupConfig = JSON.parse(backup.replace(/\n/g, "\\n"))["config"];
-
-    for (i = 0; i < backupConfig.length; i++) {
-        setConfig($blocks[i], backupConfig[i]);
+        configJSONFileDownload(fileContent, filename);
+        console.log("the export operation succeeded.");
     }
+});
+
 })();
