@@ -157,6 +157,93 @@
 
 ;(function () {
 
+//global config
+var globalConfig = {
+    "isSearchBarOpen": 1,        // 0 means off, 1 means on
+    "searchEngine": "google",    // google is the default search engine
+    "isBgSet": 0,                // 0 means no setting, 1 means setting
+    "bgData": ""
+};
+
+$(function () {
+    var config = localStorage.getItem("GLOBAL");
+
+    $(".input-ghost", $menuModal).val("");
+    $textInput.val("");
+    if (!config) {
+        return ;
+    }
+    config = JSON.parse(config);
+    if (config["isSearchBarOpen"]) {
+        // console.log(config);
+        $searchBarBtn.text("打开");
+        $searchForm.attr("action", engineConfig[config["searchEngine"]]["action"]);
+        $inputField.attr("name", engineConfig[config["searchEngine"]]["name"]);
+        $engineIcon.attr("class", "icon "+config["searchEngine"]);
+    }
+    if (config["isBgSet"]) {
+
+    }
+});
+
+
+// search bar
+var engineConfig = {
+    google: {
+        name: "q",
+        action: "https://www.google.com/search"
+    },
+    bing: {
+        name: "q",
+        action: "https://cn.bing.com/search"
+    },
+    duckduckgo: {
+        name: "q",
+        action: "https://duckduckgo.com/"
+    },
+    baidu: {
+        name: "wd",
+        action: "https://www.baidu.com/s"
+    }
+};
+
+var $searchForm = $("#search-bar"),
+    $engineWrapper = $("#search-bar .dropdown-menu"),
+    $engineIcon = $("#search-bar #my-btn-search1 i"),
+    $inputField = $("#search-bar input[type='text']"),
+    $submitBtn = $("#search-bar #my-btn-search3");
+
+$engineWrapper.on("click", function (evt) {
+    var clickedItemName = $(evt.target).attr("id");
+
+    if (!clickedItemName) {
+        return ;
+    }
+    $searchForm.attr("action", engineConfig[clickedItemName]["action"]);
+    $inputField.attr("name", engineConfig[clickedItemName]["name"]);
+    $engineIcon.attr("class", "icon "+clickedItemName);
+    globalConfig["searchEngine"] = clickedItemName;
+    localStorage.setItem("GLOBAL", JSON.stringify(globalConfig));
+});
+
+$submitBtn.on("click", function  (evt) {
+    $searchForm.trigger("submit");
+});
+
+var $searchBarBtn = $("#o1 #search-bar-btn");
+
+$("#o1 .dropdown-menu").on("click", function (evt) {
+    $searchBarBtn.text($(evt.target).text());
+    // $searchBarBtn.attr("data-sign", $(evt.target).text() === "打开" ? 1 : 0);
+    globalConfig["isSearchBarOpen"] = $(evt.target).text() === "打开" ? 1 : 0;
+    localStorage.setItem("GLOBAL", JSON.stringify(globalConfig));
+    // console.log(globalConfig);
+    // console.log(localStorage.getItem("GLOBAL"));
+    // console.log(JSON.parse(localStorage.getItem("GLOBAL")));
+    // console.log($searchBarBtn.attr("data-sign"));
+});
+
+
 // backup and restore
 var $menuModal = $("#menu-context"),
     $myInputFileDiv = $("#o3 .my-input-file"),
