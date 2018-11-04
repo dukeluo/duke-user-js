@@ -18,7 +18,8 @@ var $styleBody = $("style[type='text/css']"),
 var cssStr = "";
 
 cssStr += '.my-mb {  margin-bottom: 10px;}';
-cssStr += '.my-btn-circle {  position: absolute;  top: 1%;  right: 1%;  width: 70px;  height: 70px;  padding: 16px;  border-radius: 35px;  text-align: center;  font-size: 12px;  line-height: 1.4;  box-shadow: 0 0 2px #555;}';
+cssStr += '.my-btn-circle {  position: absolute;  top: 1%;  right: 1%;  width: 70px;  height: 70px;  padding: 16px;  border-radius: 35px;  text-align: center;  font-size: 12px;  line-height: 1.4;  outline: none !important; box-shadow: 0 0 2px #555;}';
+cssStr += '#search-bar {float: left; width:480px; padding: 4px 0 5px 10px; }';
 cssStr += '#my-btn-search1,#my-btn-search2,#my-btn-search3 {  height: 46px;  background-color: #d3d7d4;}';
 cssStr += '#my-btn-search1:focus, #my-btn-search1:active,#my-btn-search2:focus, #my-btn-search2:active,#my-btn-search3:focus, #my-btn-search3:active,#search-bar input[type="text"] {  outline: none !important;  box-shadow: none;}';
 cssStr += '#my-btn-search1 {  width: 48px;  padding: 5px 6px;  border-top-left-radius: 23px;  border-bottom-left-radius: 23px;  cursor: default;}';
@@ -58,16 +59,15 @@ $menuModal.on("hidden.bs.modal", function (evt) {
 
 //global config
 var globalConfig = {
-    "isSearchBarOpen": 1,        // 0 means off, 1 means on
+    "isSearchBarOpen": 0,        // 0 means off, 1 means on
     "searchEngine": "google",    // google is the default search engine
-    "isBgSet": 1,                // 0 means no setting, 1 means setting
+    "isBgSet": 0,                // 0 means no setting, 1 means setting
     "bgData": ""
 };
 
 $(function () {
     var config = localStorage.getItem("GLOBAL");
 
-    console.log(1);
     $menuModal.append(function (index, html) {
         return createInputFileGhost();
     });
@@ -77,11 +77,13 @@ $(function () {
         return ;
     }
     config = JSON.parse(config);
+    // console.log(config);
     if (config["isSearchBarOpen"]) {
         $searchBarBtn.text("打开");
         $searchBar.attr("action", engineConfig[config["searchEngine"]]["action"]);
         $inputField.attr("name", engineConfig[config["searchEngine"]]["name"]);
         $engineIcon.attr("class", "icon "+config["searchEngine"]);
+        $searchBar.insertAfter($body.find(".content .navbar .navbar-header"));
     }
     if (config["isBgSet"]) {
         $bgBtn.text("打开");
@@ -116,31 +118,41 @@ var $engineWrapper = $searchBar.find(".dropdown-menu"),
     $submitBtn = $searchBar.find("#my-btn-search3");
 
 $engineWrapper.on("click", function (evt) {
-    var clickedItemName = $(evt.target).attr("id");
+    var clickedItemName = $(evt.target).attr("id"),
+        config = JSON.parse(localStorage.getItem("GLOBAL")) || globalConfig;
 
-    if (!clickedItemName) {
+    if (!clickedItemName && !config["isSearchBarOpen"]) {
         return ;
     }
     $searchBar.attr("action", engineConfig[clickedItemName]["action"]);
     $inputField.attr("name", engineConfig[clickedItemName]["name"]);
     $engineIcon.attr("class", "icon "+clickedItemName);
-    globalConfig["searchEngine"] = clickedItemName;
-    localStorage.setItem("GLOBAL", JSON.stringify(globalConfig));
+    config["searchEngine"] = clickedItemName;
+    localStorage.setItem("GLOBAL", JSON.stringify(config));
 });
 
 $submitBtn.on("click", function  (evt) {
     if (!$inputField.val()) {
         return ;
     }
-    $searchForm.trigger("submit");
+    $searchBar.trigger("submit");
 });
 
 var $searchBarBtn = $("#o1 #search-bar-btn");
 
 $("#o1 .dropdown-menu").on("click", function (evt) {
+    var sign = $(evt.target).text() === "打开" ? 1 : 0,
+        config = JSON.parse(localStorage.getItem("GLOBAL")) || globalConfig;
+
     $searchBarBtn.text($(evt.target).text());
-    globalConfig["isSearchBarOpen"] = $(evt.target).text() === "打开" ? 1 : 0;
-    localStorage.setItem("GLOBAL", JSON.stringify(globalConfig));
+    config["isSearchBarOpen"] = sign;
+    if (sign) {
+        $searchBar.insertAfter($body.find(".content .navbar .navbar-header"));
+    }  else {
+        $searchBar.detach();
+        config["searchEngine"] = "google";
+    }
+    localStorage.setItem("GLOBAL", JSON.stringify(config));
 });
 
 
@@ -148,10 +160,11 @@ $("#o1 .dropdown-menu").on("click", function (evt) {
 var $bgBtn = $("#o2 #bg-btn");
 
 $("#o2 .dropdown-menu").on("click", function (evt) {
-    var sign = $(evt.target).text() === "打开" ? 1 : 0;
+    var sign = $(evt.target).text() === "打开" ? 1 : 0,
+        config = JSON.parse(localStorage.getItem("GLOBAL")) || globalConfig;;
 
     $bgBtn.text($(evt.target).text());
-    globalConfig["isBgSet"] = sign;
+    config["isBgSet"] = sign;
     if (sign) {
         $(".input-ghost", $menuModal).one("change", function (evt) {
             var fr = new FileReader(),
@@ -160,11 +173,15 @@ $("#o2 .dropdown-menu").on("click", function (evt) {
             $textInput.val("");
             if (!/image*/.test(file.type)) {
                 console.error("ERROR! Please select an image!");
+                config["isBgSet"] = 0;
+                $bgBtn.text("关闭");
+                localStorage.setItem("GLOBAL", JSON.stringify(config));
                 return ;
             }
             fr.onload = function (evt) {
                 $body.css("backgroundImage", 'url("'+fr.result+'")');
-                globalConfig["bgData"] = fr.result;
+                config["bgData"] = fr.result;
+                localStorage.setItem("GLOBAL", JSON.stringify(config));
             };
 
             fr.readAsDataURL(file);
@@ -172,9 +189,9 @@ $("#o2 .dropdown-menu").on("click", function (evt) {
         $(".input-ghost", $menuModal).trigger("click");
     }  else {
         $body.css("background-image", 'url("https://qianshan.sfo2.digitaloceanspaces.com/mountain.jpg")');
-        globalConfig["bgData"] = "";
+        config["bgData"] = "";
+        localStorage.setItem("GLOBAL", JSON.stringify(config));
     }
-    localStorage.setItem("GLOBAL", JSON.stringify(globalConfig));
 });
 
 
