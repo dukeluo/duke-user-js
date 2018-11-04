@@ -246,23 +246,29 @@ function setConfig(block, configObj) {
     var $block = $(block),
         $grids = $("div.website", $block),
         webs = configObj["websites"],
-        // blockId = $block.parent().index() + 1 + "",
-        // categoryInStorage = JSON.parse(localStorage.getItem(blockId)),
-        websiteInStorage,
+        blockId = $block.parent().index() + 1 + "",
+        categoryInStorage = JSON.parse(localStorage.getItem(blockId)) || {},
+        $website, websiteInStorage,
         i;
 
     $("div.block-name a", $block).text(configObj["title"]);
-    // categoryInStorage.category_name = configObj["title"];
-    // localStorage.setItem(blockId, JSON.stringify(categoryInStorage));
+    categoryInStorage.category_id = blockId;
+    categoryInStorage.category_name = configObj["title"];
+    localStorage.setItem(blockId, JSON.stringify(categoryInStorage));
+    // console.log(localStorage.getItem(blockId));
     for (i = 0; i < webs.length; i++) {
-        $("a span", $grids[i]).text(webs[i]["name"]);
-        $("a", $grids[i]).attr("href", webs[i]["href"]);
-        // websiteInStorage = JSON.parse(localStorage.getItem(blockId+(i+1)));
-        // websiteInStorage.website_name = webs[i]["name"];
-        // websiteInStorage.website_link = webs[i]["href"];
-        // websiteInStorage.website_hotkey = [];
-        // websiteInStorage.website_sibling_name = $(this).parents('div.building').find('a.website').text();
-        // localStorage.setItem(JSON.stringify(websiteInStorage));
+        $website = $($grids[i]);
+        $("a span", $website).text(webs[i]["name"]);
+        $("a", $website).attr("href", webs[i]["href"]);
+        websiteInStorage = JSON.parse(localStorage.getItem(blockId+(i+1))) || {};
+        websiteInStorage.website_id = blockId + (i + 1);
+        websiteInStorage.website_name = webs[i]["name"];
+        websiteInStorage.website_link = webs[i]["href"];
+        websiteInStorage.website_hotkey = [];
+        websiteInStorage.website_sibling_name = $website.parents('div.building').find('a.website').text();
+        websiteInStorage.website_sibling_id = $website.parents('div.building').find('a.website').attr('id');
+        localStorage.setItem(blockId+(i+1), JSON.stringify(websiteInStorage));
+        // console.log(localStorage.getItem(blockId+(i+1)));
     }
 }
 
