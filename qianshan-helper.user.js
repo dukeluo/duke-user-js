@@ -9,6 +9,7 @@
 // @github        https://github.com/DukeLuo/QianShan
 // ==/UserScript==
 
+
 ;(function () {
 
 // add html
@@ -18,7 +19,7 @@ var $styleBody = $("style[type='text/css']"),
 var cssStr = "";
 
 cssStr += '.my-mb {  margin-bottom: 10px;}';
-cssStr += '.my-btn-circle {  position: absolute;  top: 1%;  right: 1%;  width: 70px;  height: 70px;  padding: 16px;  border-radius: 35px;  text-align: center;  font-size: 12px;  line-height: 1.4;  outline: none !important; box-shadow: 0 0 2px #555;}';
+cssStr += '.my-btn-circle {  position: absolute;  top: 1%;  right: 1%;  width: 70px;  height: 70px;  padding: 16px;  border-radius: 35px;  text-align: center;  font-size: 12px;  line-height: 1.4;  z-index: 5;  outline: none !important;  box-shadow: 0 0 2px #555;}';
 cssStr += '#search-bar {float: left; width:480px; padding: 4px 0 5px 10px; }';
 cssStr += '#my-btn-search1,#my-btn-search2,#my-btn-search3 {  height: 46px;  background-color: #d3d7d4;}';
 cssStr += '#my-btn-search1:focus, #my-btn-search1:active,#my-btn-search2:focus, #my-btn-search2:active,#my-btn-search3:focus, #my-btn-search3:active,#search-bar input[type="text"] {  outline: none !important;  box-shadow: none;}';
@@ -77,7 +78,6 @@ $(function () {
         return ;
     }
     config = JSON.parse(config);
-    // console.log(config);
     if (config["isSearchBarOpen"]) {
         $searchBarBtn.text("打开");
         $searchBar.attr("action", engineConfig[config["searchEngine"]]["action"]);
@@ -129,6 +129,12 @@ $engineWrapper.on("click", function (evt) {
     $engineIcon.attr("class", "icon "+clickedItemName);
     config["searchEngine"] = clickedItemName;
     localStorage.setItem("GLOBAL", JSON.stringify(config));
+});
+
+$inputField.on("focus", function (evt) {
+    $(this).on("keydown", function (evt) {
+        evt.stopPropagation();
+    });
 });
 
 $submitBtn.on("click", function  (evt) {
@@ -272,7 +278,6 @@ function setConfig(block, configObj) {
     categoryInStorage.category_id = blockId;
     categoryInStorage.category_name = configObj["title"];
     localStorage.setItem(blockId, JSON.stringify(categoryInStorage));
-    // console.log(localStorage.getItem(blockId));
     for (i = 0; i < webs.length; i++) {
         $website = $($grids[i]);
         $("a span", $website).text(webs[i]["name"]);
@@ -285,7 +290,6 @@ function setConfig(block, configObj) {
         websiteInStorage.website_sibling_name = $website.parents('div.building').find('a.website').text();
         websiteInStorage.website_sibling_id = $website.parents('div.building').find('a.website').attr('id');
         localStorage.setItem(blockId+(i+1), JSON.stringify(websiteInStorage));
-        // console.log(localStorage.getItem(blockId+(i+1)));
     }
 }
 
