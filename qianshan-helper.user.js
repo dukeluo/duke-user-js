@@ -49,47 +49,7 @@ searchBarHtmlStr = '<form class="input-group" id="search-bar" method="get" targe
 $main = $(mainHtmlStr);
 $searchBar = $(searchBarHtmlStr);
 $menuModal = $main.find("#menu-context");
-
-
 $body.append($main);
-$menuModal.on("hidden.bs.modal", function (evt) {
-    $(".input-ghost", $menuModal).val("");
-    $textInput.val("");
-});
-
-
-//global config
-var globalConfig = {
-    "isSearchBarOpen": 0,        // 0 means off, 1 means on
-    "searchEngine": "google",    // google is the default search engine
-    "isBgSet": 0,                // 0 means no setting, 1 means setting
-    "bgData": ""
-};
-
-$(function () {
-    var config = localStorage.getItem("GLOBAL");
-
-    $menuModal.append(function (index, html) {
-        return createInputFileGhost();
-    });
-    $(".input-ghost", $menuModal).val("");
-    $textInput.val("");
-    if (!config) {
-        return ;
-    }
-    config = JSON.parse(config);
-    if (config["isSearchBarOpen"]) {
-        $searchBarBtn.text("打开");
-        $searchBar.attr("action", engineConfig[config["searchEngine"]]["action"]);
-        $inputField.attr("name", engineConfig[config["searchEngine"]]["name"]);
-        $engineIcon.attr("class", "icon "+config["searchEngine"]);
-        $searchBar.insertAfter($body.find(".content .navbar .navbar-header"));
-    }
-    if (config["isBgSet"]) {
-        $bgBtn.text("打开");
-        $body.css("backgroundImage", "url("+config["bgData"]+")");
-    }
-});
 
 
 // search bar
@@ -360,6 +320,49 @@ $fileBtn.on("click", function (evt) {
                    + now.getUTCDate() + ".json";
         configJSONFileDownload(fileContent, filename);
         console.log("the export operation succeeded.");
+    }
+});
+
+$menuModal.on("hidden.bs.modal", function (evt) {
+    $(".input-ghost", $menuModal).val("");
+    $textInput.val("");
+    $textInput.attr('disabled','disabled');
+    $clearBtn.attr('disabled','disabled');
+    $fileBtn.text("导出");
+    $fileBtn.attr("data-sign", "0");
+});
+
+
+//global config
+var globalConfig = {
+    "isSearchBarOpen": 0,        // 0 means off, 1 means on
+    "searchEngine": "google",    // google is the default search engine
+    "isBgSet": 0,                // 0 means no setting, 1 means setting
+    "bgData": ""
+};
+
+$(function () {
+    var config = localStorage.getItem("GLOBAL");
+
+    $menuModal.append(function (index, html) {
+        return createInputFileGhost();
+    });
+    $(".input-ghost", $menuModal).val("");
+    $textInput.val("");
+    if (!config) {
+        return ;
+    }
+    config = JSON.parse(config);
+    if (config["isSearchBarOpen"]) {
+        $searchBarBtn.text("打开");
+        $searchBar.attr("action", engineConfig[config["searchEngine"]]["action"]);
+        $inputField.attr("name", engineConfig[config["searchEngine"]]["name"]);
+        $engineIcon.attr("class", "icon "+config["searchEngine"]);
+        $searchBar.insertAfter($body.find(".content .navbar .navbar-header"));
+    }
+    if (config["isBgSet"]) {
+        $bgBtn.text("打开");
+        $body.css("backgroundImage", "url("+config["bgData"]+")");
     }
 });
 
