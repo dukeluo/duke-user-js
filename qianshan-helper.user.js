@@ -6,7 +6,7 @@
 // @include       http://*.qianshan.co/*
 // @version       3.0
 // @copyright     2018,11,01; By duke
-// @github        https://github.com/DukeLuo/QianShan
+// @github        https://github.com/DukeLuo/qianshan-helper.user.js
 // ==/UserScript==
 
 
