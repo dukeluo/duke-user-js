@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name    Slowly Save Helper
-// @description    add a save button on slowly's web version, which can save letters as pdf
+// @description    add a save button on slowly's web version, which can save letter as pdf
 // @match    https://web.getslowly.com/friend/*
 // @version    1.0
 // @copyright    2020,01,26; By duke
 // @github    https://github.com/DukeLuo/duke-user-js
 // @namespace    https://github.com/DukeLuo/duke-user-js
-// @require    https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.5.0-beta4/html2canvas.min.js
+// @require    https://cdn.jsdelivr.net/npm/html2canvas@1.0.0-rc.5/dist/html2canvas.min.js
 // @require    https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js
 // ==/UserScript==
 
@@ -55,15 +55,14 @@
     }
 
     function addPdfPage(element, pdf) {
-        const width = pdf.internal.pageSize.getWidth();
-        const height = pdf.internal.pageSize.getHeight();
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
         const html2canvasOptions = {
-            scale: 4,
+            scale: 2,
             useCORS: true,
         };
 
-        element.style.width = `${width}px`;
-        element.style.height = `${height}px`;
+        element.style.width = `${pageWidth}px`;
         element.querySelector('.letter').style.border = 'none';
         element.querySelector('.letter').style.boxShadow = 'none';
         const deleteButton = element.querySelector('.modal-footer .link');
@@ -71,10 +70,14 @@
 
         return html2canvas(element, html2canvasOptions)
             .then(canvas => {
-                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, width, height);
-                pdf.rect(20, 20, width - 40, height - 40);
-                pdf.text(`${pdf.internal.getNumberOfPages()}`, width / 2, height - 25);
-                pdf.addPage(width, height);
+                const image = canvas.toDataURL('image/png');
+                const imgWidth = pageWidth;
+                const imgHeight = canvas.height / canvas.width * imgWidth;
+                const count = Math.ceil(canvas.height / (pageHeight * html2canvasOptions.scale));
+                Array.from(Array(count).keys()).forEach((i) => {
+                    pdf.addPage(pageWidth, pageHeight);
+                    pdf.addImage(image, 'PNG', 0, - i * pageHeight, imgWidth, imgHeight, '', 'FAST');
+                });
             });
     }
 
@@ -105,14 +108,14 @@
 
     function save() {
         const name = `${getFileName()}.pdf`;
-        const pdf = new jsPDF('p', 'pt', 'a4');
+        const pdf = new jsPDF('p', 'pt', 'a4', true);
 
         scrollToBottom().then(
             () => {
                 const letterCount = document.querySelector(letterContainerSelector).childElementCount;
 
                 console.log(`total letter: ${letterCount}`);
-                Array.from(Array(letterCount).keys()).reduce(
+                Array.from(Array(3).keys()).reduce(
                     (chain, order) => chain.then(
                         () => addPdfPage(findContentDom(order), pdf),
                     ).then(
