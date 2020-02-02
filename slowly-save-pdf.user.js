@@ -80,6 +80,46 @@
         return createElementFromHTML(stampHtml);
     }
 
+    // mask layer
+    function addMaskStyle() {
+        const maskStyle = `
+            .mask {
+                width: 100%;
+                height: 100%;
+                position: fixed;
+                top: 0px;
+                left: 0px;
+                background-color: black;
+                opacity: 0.5;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 6rem;
+                font-weight: 700;
+                color: #444;
+                z-index: 9999999999993;
+            }
+        `;
+
+        insertCSS(maskStyle);
+    }
+
+    function addMask() {
+        const maskHtml = `
+            <div class='mask'>Please wait for a while...</div>
+        `;
+        const mask = createElementFromHTML(maskHtml);
+
+        addMaskStyle();
+        document.body.appendChild(mask);
+    }
+
+    function removeMask() {
+        const mask = document.querySelector('.mask');
+
+        mask.parentNode.removeChild(mask);
+    }
+
     // letter to pdf
     function getFileName() {
         return 'Orange';
@@ -143,6 +183,7 @@
         const name = `${getFileName()}.pdf`;
         const pdf = new jsPDF('p', 'pt', 'a4', true);
 
+        addMask();
         scrollToBottom().then(
             () => {
                 const letterCount = document.querySelector(letterContainerSelector).childElementCount;
@@ -157,7 +198,10 @@
                         () => console.log(`saved ${order + 1}th letter`)
                     ),
                     Promise.resolve()).then(
-                        () => pdf.save(name)
+                        () => {
+                            pdf.save(name);
+                            removeMask();
+                        }
                     );
             });
     }
