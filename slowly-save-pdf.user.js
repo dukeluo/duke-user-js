@@ -2,7 +2,7 @@
 // @name    Slowly Save Helper
 // @description    add a save button on slowly's web version, which can save letter as pdf
 // @match    https://web.getslowly.com/friend/*
-// @version    1.0
+// @version    1.1
 // @copyright    2020,01,26; By duke
 // @github    https://github.com/DukeLuo/duke-user-js
 // @namespace    https://github.com/DukeLuo/duke-user-js
@@ -16,6 +16,8 @@
     const slowlyHeaderMenuSelector = '.App-header .container .col:last-child';
     const letterContainerSelector = '.main-scroller .friend-letters-wrapper > .row';
     const letterContentSelector = '.main-scroller .main-container .friend-Letter-wrapper';
+    const profileAvatarSelector = '.App-header .container .col:last-child button:first-child img';
+    const friendAvatarSelector = '.friend-header img.link';
 
     // saving button
     function createElementFromHTML(htmlString) {
@@ -122,16 +124,54 @@
 
     // letter to pdf
     function getFileName() {
-        return 'Orange';
+        const profileAvatar = document.querySelector(profileAvatarSelector);
+        const friendAvatar = document.querySelector(friendAvatarSelector);
+
+        return `${profileAvatar.alt.toLowerCase()}-${friendAvatar.alt.toLowerCase()}`;
     }
 
-    function addPdfPage(element, pdf, order) {
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const html2canvasOptions = {
+    async function html2canvasWithOption(element) {
+        const options = {
             scale: 2,
             useCORS: true,
         };
+
+        return await html2canvas(element, options);
+    }
+
+    async function addCover(pdf) {
+        const profileAvatar = document.querySelector(profileAvatarSelector);
+        const friendAvatar = document.querySelector(friendAvatarSelector);
+        profileAvatar.style.width = '100px';
+        profileAvatar.style.height = '100px';
+        profileAvatar.style.borderWidth = '3px';
+        friendAvatar.style.width = '100px';
+        friendAvatar.style.height = '100px';
+        const profileAvatarCanvas = await html2canvasWithOption(profileAvatar);
+        const friendAvatarCanvas = await html2canvasWithOption(friendAvatar);
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        pdf.setFontSize(80);
+        pdf.text('SLOWLY', pageWidth / 2, pageHeight * 0.4, {
+            align: 'center',
+            charSpace: '4',
+        });
+        pdf.addImage(profileAvatarCanvas.toDataURL('image/png'), 'PNG', pageWidth / 2 - 110, pageHeight * 0.6, 100, 100, '', 'FAST');
+        pdf.addImage(friendAvatarCanvas.toDataURL('image/png'), 'PNG', pageWidth / 2 + 10, pageHeight * 0.6, 100, 100, '', 'FAST');
+        pdf.setFillColor('#ffc300');
+        pdf.triangle(pageWidth, pageHeight, pageWidth - 100, pageHeight, pageWidth, pageHeight - 100, 'F');
+        pdf.setTextColor('#ffffff');
+        pdf.setFontSize(20);
+        pdf.text('Orange', pageWidth, pageHeight - 5, {
+            align: 'right',
+            angle: '45',
+        });
+    }
+
+    async function addPdfPage(element, pdf, order) {
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
 
         element.style.width = `${pageWidth}px`;
         element.style.position = 'relative';    // position for stamp
@@ -141,17 +181,14 @@
         deleteButton.parentNode.removeChild(deleteButton);
         element.appendChild(createStamp(`${order + 1}th letter`));
 
-        return html2canvas(element, html2canvasOptions)
-            .then(canvas => {
-                const image = canvas.toDataURL('image/png');
-                const imgWidth = pageWidth;
-                const imgHeight = canvas.height / canvas.width * imgWidth;
-                const count = Math.ceil(canvas.height / (pageHeight * html2canvasOptions.scale));
-                Array.from(Array(count).keys()).forEach((i) => {
-                    pdf.addPage(pageWidth, pageHeight);
-                    pdf.addImage(image, 'PNG', 0, - i * pageHeight, imgWidth, imgHeight, '', 'FAST');
-                });
-            });
+        const canvas = await html2canvasWithOption(element);
+        const imgWidth = pageWidth;
+        const imgHeight = canvas.height / canvas.width * imgWidth;
+        const count = Math.ceil(canvas.height / (pageHeight * 2)); // html2canvas options
+        Array.from(Array(count).keys()).forEach((i) => {
+            pdf.addPage(pageWidth, pageHeight);
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, - i * pageHeight, imgWidth, imgHeight, '', 'FAST');
+        });
     }
 
     function sleep(ms) {
@@ -162,28 +199,24 @@
         const cardDomSelector = `.main-scroller .friend-letters-wrapper > .row div:nth-child(${order + 1}) a.card`;
         const cardDom = document.querySelector(cardDomSelector);
         cardDom.click();
-        const contentDom = document.querySelector(letterContentSelector);
-        const cloneContentDom = contentDom.cloneNode(true);
 
-        // everything that you want present on the canvas need to be in the DOM
-        contentDom.parentElement.appendChild(cloneContentDom);
-
-        return cloneContentDom;
+        return document.querySelector(letterContentSelector);
     }
 
     function back() {
         return new Promise(async (resolve) => {
             window.history.back();
-            await sleep(200);
+            await sleep(300);
             resolve();
         });
     }
 
-    function save() {
+    async function save() {
         const name = `${getFileName()}.pdf`;
         const pdf = new jsPDF('p', 'pt', 'a4', true);
 
         addMask();
+        await addCover(pdf);
         scrollToBottom().then(
             () => {
                 const letterCount = document.querySelector(letterContainerSelector).childElementCount;
@@ -191,11 +224,11 @@
                 console.log(`total letter: ${letterCount}`);
                 Array.from(Array(letterCount).keys()).reverse().reduce(
                     (chain, order, index) => chain.then(
-                        () => addPdfPage(findContentDom(order), pdf, index),
+                        async () => addPdfPage(findContentDom(order), pdf, index),
                     ).then(
                         () => back()
                     ).then(
-                        () => console.log(`saved ${order + 1}th letter`)
+                        () => console.log(`saved ${index + 1}th letter`)
                     ),
                     Promise.resolve()).then(
                         () => {
@@ -207,7 +240,7 @@
     }
 
     function scrollToBottom() {
-        let count = 8;
+        let count = 10;
 
         return new Promise((resolve) => {
             const scrollInterval = setInterval(
