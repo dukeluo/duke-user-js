@@ -184,7 +184,8 @@
         const canvas = await html2canvasWithOption(element);
         const imgWidth = pageWidth;
         const imgHeight = canvas.height / canvas.width * imgWidth;
-        const count = Math.ceil(canvas.height / (pageHeight * 2)); // html2canvas options
+        const times = canvas.height / (pageHeight * 2);
+        const count = times % Math.floor(times) < 0.1 ? Math.floor(times) : Math.ceil(times); // html2canvas options
         Array.from(Array(count).keys()).forEach((i) => {
             pdf.addPage(pageWidth, pageHeight);
             pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, - i * pageHeight, imgWidth, imgHeight, '', 'FAST');
