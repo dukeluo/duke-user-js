@@ -17,6 +17,7 @@
     const letterContainerSelector = '.main-scroller .friend-letters-wrapper > .row';
     const letterContentSelector = '.main-scroller .main-container .friend-Letter-wrapper';
 
+    // saving button
     function createElementFromHTML(htmlString) {
         var div = document.createElement('div');
 
@@ -49,12 +50,42 @@
         insertCSS(buttonStyle);
     }
 
+    // add stamp
+    function addStampStyle() {
+        const stampStyle = `
+            .stamp-nth {
+                display: inline-block;
+                position: absolute;
+                top: 10%;
+                left: 5%;
+                color: #555;
+                font-size: 3rem;
+                font-weight: 700;
+                font-family: 'Courier';
+                padding: 0.25rem 1rem;
+                border: 0.25rem solid #555;
+                border-radius: 1rem;
+                transform: rotate(12deg);
+            }
+        `;
 
+        insertCSS(stampStyle);
+    }
+
+    function createStamp(content) {
+        const stampHtml = `
+            <span class="stamp-nth">${content}</span>
+        `;
+
+        return createElementFromHTML(stampHtml);
+    }
+
+    // letter to pdf
     function getFileName() {
         return 'Orange';
     }
 
-    function addPdfPage(element, pdf) {
+    function addPdfPage(element, pdf, order) {
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
         const html2canvasOptions = {
@@ -63,10 +94,12 @@
         };
 
         element.style.width = `${pageWidth}px`;
+        element.style.position = 'relative';    // position for stamp
         element.querySelector('.letter').style.border = 'none';
         element.querySelector('.letter').style.boxShadow = 'none';
         const deleteButton = element.querySelector('.modal-footer .link');
         deleteButton.parentNode.removeChild(deleteButton);
+        element.appendChild(createStamp(`${order + 1}th letter`));
 
         return html2canvas(element, html2canvasOptions)
             .then(canvas => {
@@ -115,9 +148,9 @@
                 const letterCount = document.querySelector(letterContainerSelector).childElementCount;
 
                 console.log(`total letter: ${letterCount}`);
-                Array.from(Array(3).keys()).reduce(
-                    (chain, order) => chain.then(
-                        () => addPdfPage(findContentDom(order), pdf),
+                Array.from(Array(letterCount).keys()).reverse().reduce(
+                    (chain, order, index) => chain.then(
+                        () => addPdfPage(findContentDom(order), pdf, index),
                     ).then(
                         () => back()
                     ).then(
@@ -149,4 +182,5 @@
 
     // init
     addSaveButton();
+    addStampStyle();
 })();
