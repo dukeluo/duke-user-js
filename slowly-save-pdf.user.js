@@ -2,7 +2,7 @@
 // @name    Slowly Save Helper
 // @description    add a save button on slowly's web version, which can save letter as pdf
 // @match    https://web.getslowly.com/friend/*
-// @version    1.1
+// @version    1.2
 // @copyright    2020,01,26; By duke
 // @github    https://github.com/DukeLuo/duke-user-js
 // @namespace    https://github.com/DukeLuo/duke-user-js
@@ -163,7 +163,7 @@
         pdf.triangle(pageWidth, pageHeight, pageWidth - 100, pageHeight, pageWidth, pageHeight - 100, 'F');
         pdf.setTextColor('#ffffff');
         pdf.setFontSize(20);
-        pdf.text('Orange', pageWidth, pageHeight - 5, {
+        pdf.text('dukeluo', pageWidth, pageHeight - 5, {
             align: 'right',
             angle: '45',
         });
