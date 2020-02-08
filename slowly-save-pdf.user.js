@@ -2,7 +2,7 @@
 // @name    Slowly Save Helper
 // @description    add a save button on slowly's web version, which can save letter as pdf
 // @match    https://web.getslowly.com/friend/*
-// @version    1.2
+// @version    1.3
 // @copyright    2020,01,26; By duke
 // @github    https://github.com/DukeLuo/duke-user-js
 // @namespace    https://github.com/DukeLuo/duke-user-js
@@ -204,12 +204,9 @@
         return document.querySelector(letterContentSelector);
     }
 
-    function back() {
-        return new Promise(async (resolve) => {
-            window.history.back();
-            await sleep(300);
-            resolve();
-        });
+    async function back() {
+        window.history.back();
+        await sleep(300);
     }
 
     async function save() {
@@ -225,11 +222,11 @@
                 console.log(`total letter: ${letterCount}`);
                 Array.from(Array(letterCount).keys()).reverse().reduce(
                     (chain, order, index) => chain.then(
-                        async () => addPdfPage(findContentDom(order), pdf, index),
-                    ).then(
-                        () => back()
-                    ).then(
-                        () => console.log(`saved ${index + 1}th letter`)
+                        async () => {
+                            await addPdfPage(findContentDom(order), pdf, index);
+                            await back();
+                            console.log(`saved ${index + 1}th letter`);
+                        }
                     ),
                     Promise.resolve()).then(
                         () => {
